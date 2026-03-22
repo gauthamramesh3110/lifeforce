@@ -146,6 +146,9 @@ export default async function PatientDetailsPage({ params }: { params: { id: str
                         columns={section.columns}
                         records={clinicalData[idx].records}
                         totalCount={clinicalData[idx].totalCount}
+                        containerName={section.container}
+                        patientId={id}
+                        dateField={section.dateField}
                     />
                 ))}
             </div>

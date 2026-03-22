@@ -10,6 +10,13 @@ import {
     TableHeader,
     TableRow,
 } from "./ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "./ui/dialog";
 
 export interface ClinicalColumn {
     key: string;
@@ -31,37 +38,6 @@ export default function ClinicalDataTable({
         string,
         unknown
     > | null>(null);
-
-    if (selectedRecord) {
-        return (
-            <div className="bg-white border rounded p-4">
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-md font-semibold">{title} — Detail</h3>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedRecord(null)}
-                    >
-                        Back
-                    </Button>
-                </div>
-                <Table>
-                    <TableBody>
-                        {Object.entries(selectedRecord)
-                            .filter(([key]) => !key.startsWith("_"))
-                            .map(([key, value]) => (
-                                <TableRow key={key}>
-                                    <TableCell className="font-medium">
-                                        {key}
-                                    </TableCell>
-                                    <TableCell>{String(value ?? "")}</TableCell>
-                                </TableRow>
-                            ))}
-                    </TableBody>
-                </Table>
-            </div>
-        );
-    }
 
     return (
         <div className="bg-white border rounded p-4">
@@ -104,6 +80,40 @@ export default function ClinicalDataTable({
                     </TableBody>
                 </Table>
             )}
+
+            <Dialog
+                open={selectedRecord !== null}
+                onOpenChange={(open) => {
+                    if (!open) setSelectedRecord(null);
+                }}
+            >
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{title} — Detail</DialogTitle>
+                        <DialogDescription>
+                            Full record details
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedRecord && (
+                        <Table>
+                            <TableBody>
+                                {Object.entries(selectedRecord)
+                                    .filter(([key]) => !key.startsWith("_"))
+                                    .map(([key, value]) => (
+                                        <TableRow key={key}>
+                                            <TableCell className="font-medium w-1/3">
+                                                {key}
+                                            </TableCell>
+                                            <TableCell>
+                                                {String(value ?? "")}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

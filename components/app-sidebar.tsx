@@ -20,7 +20,7 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton>
                             <Cross size={80} color="#00703f" fill="#00703f" />
-                            <div className="text-[#00703f] font-bold text-xl">Care Management</div>
+                            <div className="text-[#00703f] font-bold text-xl">Lifeforce</div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

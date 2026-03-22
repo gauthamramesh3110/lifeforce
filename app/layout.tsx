@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Care Management",
+  title: "Lifeforce",
   description: "A care management application built with Next.js and TypeScript.",
 };
 

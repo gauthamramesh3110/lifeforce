@@ -1,0 +1,82 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    
+permissions:
+  id-token: write # CRITICAL: Required for OIDC authentication with Azure
+  contents: read  # Required to checkout the repository code
+
+env:
+  # Replace these with your actual Azure resource names
+  AZURE_REGISTRY_NAME: 'theforcelabs' 
+  AZURE_REGISTRY_SERVER: 'theforcelabs.azurecr.io'
+  CONTAINER_APP_NAME: 'lifeforce'
+  RESOURCE_GROUP: 'lifeforce'
+  IMAGE_NAME: 'lifeforce'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Securely authenticate to Azure via OIDC
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # 3. Authenticate Docker to your ACR
+      - name: Log in to Azure Container Registry
+        run: az acr login --name ${{ env.AZURE_REGISTRY_NAME }}
+
+      # 4. Set up Docker Buildx (Provides better caching and performance)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+        # 4.4 Extract metadata (tags, labels) for Docker
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.AZURE_REGISTRY_SERVER }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # 1. Always tag with the specific commit SHA for easy rollbacks
+            type=raw,value=${{ github.sha }}
+            
+            # 2. Tag with 'latest' ONLY if the code is pushed/merged to main
+            type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+            
+            # 3. Tag with 'pr-{number}' (e.g., pr-1) ONLY during a Pull Request
+            type=ref,event=pr
+
+      # 5. Build and Push Docker Image
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # Pass in the dynamically generated tags and labels from the step above
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # 6. Trigger the deployment on Azure Container Apps
+      - name: Deploy to Azure Container Apps
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.AZURE_REGISTRY_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}

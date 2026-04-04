@@ -29,6 +29,7 @@ jobs:
 
       # 2. Securely authenticate to Azure via OIDC
       - name: Azure Login
+        if: github.event_name == 'push'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -37,6 +38,7 @@ jobs:
 
       # 3. Authenticate Docker to your ACR
       - name: Log in to Azure Container Registry
+        if: github.event_name == 'push'
         run: az acr login --name ${{ env.AZURE_REGISTRY_NAME }}
 
       # 4. Set up Docker Buildx (Provides better caching and performance)
@@ -64,7 +66,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
+          push: ${{ github.event_name == 'push' }}
           # Pass in the dynamically generated tags and labels from the step above
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

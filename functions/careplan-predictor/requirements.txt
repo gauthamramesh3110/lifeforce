@@ -1,0 +1,5 @@
+azure-functions
+azure-cosmos
+torch --index-url https://download.pytorch.org/whl/cpu
+numpy
+pandas

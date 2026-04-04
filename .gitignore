@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+.vscode
 
 # debug
 npm-debug.log*
@@ -41,4 +42,17 @@ yarn-error.log*
 next-env.d.ts
 
 # CSV Dataset
-/data
+/.data
+
+/ai
+
+# Azurite local storage emulator
+__blobstorage__
+__queuestorage__
+__azurite_db_blob*.json
+__azurite_db_queue*.json
+__azurite_db_table*.json
+AzuriteConfig
+
+# Azure Functions
+functions/careplan-predictor/local.settings.json

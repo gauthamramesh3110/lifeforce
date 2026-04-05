@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import {
     Table,
@@ -17,6 +18,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "./ui/dialog";
+import CreateCareplanDialog from "./create-careplan-dialog";
 
 export interface ClinicalColumn {
     key: string;
@@ -200,13 +202,27 @@ export default function ClinicalDataTable({
     dateField,
     showPrediction,
 }: ClinicalDataTableProps) {
+    const router = useRouter();
     const [selectedRecord, setSelectedRecord] = useState<Record<
         string,
         unknown
     > | null>(null);
     const [viewAllOpen, setViewAllOpen] = useState(false);
+    const [createOpen, setCreateOpen] = useState(false);
+    const [createInitialDescription, setCreateInitialDescription] = useState<string | undefined>(undefined);
     const [prediction, setPrediction] = useState<string | null>(null);
     const [predictionLoading, setPredictionLoading] = useState(false);
+
+    const handleCreated = () => {
+        setCreateOpen(false);
+        setCreateInitialDescription(undefined);
+        router.refresh();
+    };
+
+    const openCreate = (initialDescription?: string) => {
+        setCreateInitialDescription(initialDescription);
+        setCreateOpen(true);
+    };
 
     useEffect(() => {
         if (!showPrediction) return;
@@ -235,9 +251,11 @@ export default function ClinicalDataTable({
                     >
                         View All
                     </Button>
-                    <Button variant="outline" size="sm" disabled>
-                        Create
-                    </Button>
+                    {showPrediction && (
+                        <Button variant="outline" size="sm" onClick={() => openCreate()}>
+                            Create
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -268,8 +286,8 @@ export default function ClinicalDataTable({
                     </div>
                     <Button
                         size="sm"
-                        disabled
-                        className="bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                        onClick={() => openCreate(prediction ?? undefined)}
+                        className="bg-indigo-600 text-white hover:bg-indigo-700"
                     >
                         Create Careplan
                     </Button>
@@ -321,6 +339,15 @@ export default function ClinicalDataTable({
                     dateField={dateField}
                     totalCount={totalCount}
                     onClose={() => setViewAllOpen(false)}
+                />
+            )}
+
+            {createOpen && (
+                <CreateCareplanDialog
+                    patientId={patientId}
+                    initialDescription={createInitialDescription}
+                    onClose={() => { setCreateOpen(false); setCreateInitialDescription(undefined); }}
+                    onCreated={handleCreated}
                 />
             )}
         </div>

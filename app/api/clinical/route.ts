@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCosmosClient } from '@/lib/cosmos';
+import { randomUUID } from 'crypto';
 
 const ALLOWED_CONTAINERS = new Set([
   'allergies', 'careplans', 'conditions', 'immunizations',
@@ -41,6 +42,69 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(resources);
   } catch (error) {
     console.error('Clinical data pagination error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { container: containerName, patientId, record } = body as {
+      container: string;
+      patientId: string;
+      record: Record<string, unknown>;
+    };
+
+    if (!containerName || !patientId || !record) {
+      return NextResponse.json(
+        { error: 'container, patientId, and record are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!ALLOWED_CONTAINERS.has(containerName)) {
+      return NextResponse.json({ error: 'Invalid container name' }, { status: 400 });
+    }
+
+    const db = getCosmosClient().database('clinical');
+    const container = db.container(containerName);
+
+    // Auto-resolve CODE from DESCRIPTION and REASONCODE from REASONDESCRIPTION
+    if (containerName === 'careplans') {
+      if (record.DESCRIPTION && !record.CODE) {
+        const { resources } = await container.items
+          .query({
+            query: 'SELECT TOP 1 c.CODE FROM c WHERE c.DESCRIPTION = @desc AND IS_DEFINED(c.CODE) AND c.CODE != ""',
+            parameters: [{ name: '@desc', value: String(record.DESCRIPTION) }],
+          })
+          .fetchAll();
+        if (resources.length > 0) {
+          record.CODE = resources[0].CODE;
+        }
+      }
+      if (record.REASONDESCRIPTION && !record.REASONCODE) {
+        const { resources } = await container.items
+          .query({
+            query: 'SELECT TOP 1 c.REASONCODE FROM c WHERE c.REASONDESCRIPTION = @reason AND IS_DEFINED(c.REASONCODE) AND c.REASONCODE != ""',
+            parameters: [{ name: '@reason', value: String(record.REASONDESCRIPTION) }],
+          })
+          .fetchAll();
+        if (resources.length > 0) {
+          record.REASONCODE = resources[0].REASONCODE;
+        }
+      }
+    }
+
+    const item = {
+      id: randomUUID(),
+      PATIENT: patientId,
+      ...record,
+    };
+
+    const { resource } = await container.items.create(item);
+    return NextResponse.json(resource, { status: 201 });
+  } catch (error) {
+    console.error('Clinical data create error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

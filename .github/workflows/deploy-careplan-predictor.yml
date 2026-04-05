@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  AZURE_FUNCTION_APP_NAME: "careplan-predictor"
+  AZURE_FUNCTION_APP_NAME: "careplan-predictor-func"
   PYTHON_VERSION: "3.11"
   FUNCTION_PATH: "functions/careplan-predictor"
 

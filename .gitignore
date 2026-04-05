@@ -55,4 +55,4 @@ __azurite_db_table*.json
 AzuriteConfig
 
 # Azure Functions
-functions/careplan-predictor/local.settings.json
+/functions/careplan-predictor/local.settings.json

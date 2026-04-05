@@ -143,6 +143,7 @@ export default async function PatientDetailsPage({ params }: { params: { id: str
                         containerName={section.container}
                         patientId={id}
                         dateField={section.dateField}
+                        showPrediction={section.container === "careplans"}
                     />
                 ))}
             </div>

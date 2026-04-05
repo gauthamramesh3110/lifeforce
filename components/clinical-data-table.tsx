@@ -31,6 +31,7 @@ interface ClinicalDataTableProps {
     containerName: string;
     patientId: string;
     dateField: string;
+    showPrediction?: boolean;
 }
 
 const PAGE_SIZE = 10;
@@ -197,12 +198,29 @@ export default function ClinicalDataTable({
     containerName,
     patientId,
     dateField,
+    showPrediction,
 }: ClinicalDataTableProps) {
     const [selectedRecord, setSelectedRecord] = useState<Record<
         string,
         unknown
     > | null>(null);
     const [viewAllOpen, setViewAllOpen] = useState(false);
+    const [prediction, setPrediction] = useState<string | null>(null);
+    const [predictionLoading, setPredictionLoading] = useState(false);
+
+    useEffect(() => {
+        if (!showPrediction) return;
+        setPredictionLoading(true);
+        fetch(`/api/careplan-prediction?patientId=${encodeURIComponent(patientId)}`)
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+                if (data?.predicted_careplan?.description) {
+                    setPrediction(data.predicted_careplan.description);
+                }
+            })
+            .catch(() => {})
+            .finally(() => setPredictionLoading(false));
+    }, [showPrediction, patientId]);
 
     return (
         <div className="bg-white border rounded p-4">
@@ -222,6 +240,41 @@ export default function ClinicalDataTable({
                     </Button>
                 </div>
             </div>
+
+            {showPrediction && (
+                <div className="flex items-center justify-between mb-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={1.5}
+                            className="h-5 w-5 text-indigo-600 shrink-0"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
+                            />
+                        </svg>
+                        <span className="text-sm text-indigo-900">
+                            {predictionLoading
+                                ? "Predicting next careplan…"
+                                : prediction
+                                    ? <>AI Suggestion: <span className="font-semibold">{prediction}</span></>
+                                    : "No prediction available"}
+                        </span>
+                    </div>
+                    <Button
+                        size="sm"
+                        disabled
+                        className="bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                        Create Careplan
+                    </Button>
+                </div>
+            )}
             {records.length === 0 ? (
                 <p className="text-sm text-gray-500">No Records</p>
             ) : (

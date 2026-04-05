@@ -9,7 +9,7 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from "@/components/ui/sidebar"
-import { Cross, LayoutDashboard, User2, UserRoundSearch } from "lucide-react"
+import { Heart, LayoutDashboard, User2, UserRoundSearch } from "lucide-react"
 import Link from "next/link"
 
 export function AppSidebar() {
@@ -19,7 +19,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton>
-                            <Cross size={80} color="#00703f" fill="#00703f" />
+                            <Heart size={80} color="#00703f" fill="#00703f" />
                             <div className="text-[#00703f] font-bold text-xl">Lifeforce</div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

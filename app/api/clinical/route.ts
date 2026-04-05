@@ -69,6 +69,32 @@ export async function POST(req: NextRequest) {
     const db = getCosmosClient().database('clinical');
     const container = db.container(containerName);
 
+    // Auto-resolve CODE from DESCRIPTION and REASONCODE from REASONDESCRIPTION
+    if (containerName === 'careplans') {
+      if (record.DESCRIPTION && !record.CODE) {
+        const { resources } = await container.items
+          .query({
+            query: 'SELECT TOP 1 c.CODE FROM c WHERE c.DESCRIPTION = @desc AND IS_DEFINED(c.CODE) AND c.CODE != ""',
+            parameters: [{ name: '@desc', value: String(record.DESCRIPTION) }],
+          })
+          .fetchAll();
+        if (resources.length > 0) {
+          record.CODE = resources[0].CODE;
+        }
+      }
+      if (record.REASONDESCRIPTION && !record.REASONCODE) {
+        const { resources } = await container.items
+          .query({
+            query: 'SELECT TOP 1 c.REASONCODE FROM c WHERE c.REASONDESCRIPTION = @reason AND IS_DEFINED(c.REASONCODE) AND c.REASONCODE != ""',
+            parameters: [{ name: '@reason', value: String(record.REASONDESCRIPTION) }],
+          })
+          .fetchAll();
+        if (resources.length > 0) {
+          record.REASONCODE = resources[0].REASONCODE;
+        }
+      }
+    }
+
     const item = {
       id: randomUUID(),
       PATIENT: patientId,

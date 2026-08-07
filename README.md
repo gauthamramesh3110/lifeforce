@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lifeforce
 
-## Getting Started
+A care management dashboard that serves machine-learning care-plan predictions to
+clinicians — the deployment half of the
+[care plan prediction work](https://github.com/gauthamramesh3110/clinical_data_ml).
 
-First, run the development server:
+The model that reaches 70% top-1 accuracy in a notebook is not a system. This is
+what it takes to make it one: a service boundary, an auth story, a container, and
+a pipeline that ships it.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Architecture
+
+```
+Next.js app (App Router, TypeScript)
+   │
+   ├── Microsoft Entra ID ──── authentication
+   │
+   ├── Cosmos DB ──────────── patient and encounter data
+   │
+   └── careplan-predictor ─── Azure Function serving the PyTorch Transformer
+                              (functions/careplan-predictor)
+
+Docker image ──► Azure Container Instances
+GitHub Actions ─► build pipeline
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The predictor lives behind its own function boundary rather than inside the web
+app: the model has different scaling behaviour, different dependencies, and a
+different deployment cadence from the UI.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+<!-- TODO: describe what the dashboard actually shows — which views exist, what a
+     clinician does with a prediction once it appears. Two or three sentences. -->
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Layout
 
-## Learn More
+| Path                        | Contents                                  |
+| --------------------------- | ----------------------------------------- |
+| `app/`                      | Next.js App Router pages and layouts      |
+| `components/`               | UI components (shadcn/ui, see `components.json`) |
+| `functions/careplan-predictor/` | Azure Function serving model predictions |
+| `hooks/`                    | React hooks                               |
+| `lib/`                      | Shared utilities and data access          |
+| `types/`                    | Shared TypeScript types                   |
+| `scripts/`                  | Setup and data-loading scripts            |
+| `proxy.ts`                  | Request proxying                          |
+| `Dockerfile`                | Container build                           |
+| `.github/workflows/`        | CI                                        |
 
-To learn more about Next.js, take a look at the following resources:
+## Running locally
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev          # http://localhost:3000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+<!-- TODO: list the required environment variables — Cosmos DB connection,
+     Entra ID client/tenant IDs, predictor function URL — with a .env.example. -->
 
-## Deploy on Vercel
+The predictor function runs separately:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+cd functions/careplan-predictor
+# TODO: document how to run the function locally (Azure Functions Core Tools?)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+Built as a container and deployed to Azure Container Instances, with the image
+pushed to Azure Container Registry. CI runs from `.github/workflows/`.
+
+<!-- TODO: document the deploy step — which workflow, what it needs configured,
+     whether deployment is automatic on main or manual. -->
+
+## Data
+
+Patient records come from [Synthea](https://github.com/synthetichealth/synthea)
+synthetic data — no real patient information is involved anywhere in this project.
+
+## Status
+
+<!-- TODO: one honest line. Is this deployed and reachable, or does it run
+     locally? A reader wants to know before they clone it. -->
